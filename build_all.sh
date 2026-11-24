@@ -4,14 +4,33 @@ cd "$(dirname "$0")"
 mkdir -p dist
 rm -f dist/* 2>/dev/null
 
-TRIPLES="x86_64-linux-gnu x86-linux-gnu aarch64-linux-gnu aarch64_be-linux-gnu arm-linux-gnueabi arm-linux-gnueabihf armeb-linux-gnueabi armeb-linux-gnueabihf mips-linux-gnu mipsel-linux-gnu mips64-linux-gnuabi64 mips64el-linux-gnuabi64 powerpc-linux-gnu powerpc64-linux-gnu powerpc64le-linux-gnu riscv64-linux-gnu s390x-linux-gnu loongarch64-linux-gnu sparc64-linux-gnu"
+# every glibc-capable triple, glibc version embedded per arch
+# (2.4 where that arch ever existed; arch-specific zig floor otherwise)
+# note: zig has no glibc at all for 32-bit powerpc -> omitted
+TRIPLES="x86_64-linux-gnu.2.4 \
+         x86-linux-gnu.2.4 \
+         aarch64-linux-gnu.2.17 \
+         aarch64_be-linux-gnu.2.17 \
+         arm-linux-gnueabi.2.4 \
+         arm-linux-gnueabihf.2.4 \
+         armeb-linux-gnueabi.2.4 \
+         armeb-linux-gnueabihf.2.4 \
+         mips-linux-gnueabi.2.4 \
+         mipsel-linux-gnueabi.2.4 \
+         mips64-linux-gnuabi64.2.4 \
+         mips64el-linux-gnuabi64.2.4 \
+         powerpc64le-linux-gnu.2.19 \
+         riscv64-linux-gnu.2.27 \
+         s390x-linux-gnu.2.4 \
+         loongarch64-linux-gnu.2.36 \
+         sparc64-linux-gnu.2.4"
 for t in $TRIPLES; do
-  if zig cc -target "$t.2.4" -shared -fPIC -O2 -Wall -Wextra \
+  if zig cc -target "$t" -shared -fPIC -O2 -Wall -Wextra \
             -fno-builtin -fno-stack-protector -pthread \
             hook.c -o "dist/libhook-$t.so"; then
-    echo "$t -> glibc 2.4"
+    echo "built libhook-$t.so"
   else
-    echo "SKIP $t (glibc 2.4 unsupported)"
+    echo "SKIP $t"
   fi
 done
 

@@ -5,24 +5,42 @@ on:
   pull_request:
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: /bin/bash -e {0}
+
+env:
+  ZIG_VERSION: "0.17.1"
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: 0.17.1
-      - name: Build all targets (every glibc triple pinned at 2.4)
-        working-directory: mq_wiretap
+
+      - name: Install zig (manual, no setup action)
+        run: |
+          URL=$(curl -sL https://ziglang.org/download/index.json \
+                | jq -r --arg v "$ZIG_VERSION" '.[$v]["x86_64-linux"].tarball')
+          test -n "$URL" && test "$URL" != "null"
+          curl -sL "$URL" -o /tmp/zig.tar.xz
+          mkdir -p /opt/zig
+          tar -xf /tmp/zig.tar.xz -C /opt/zig --strip-components=1
+          echo /opt/zig >> "$GITHUB_PATH"
+          /opt/zig/zig version
+
+      - name: Build all targets (every glibc triple pinned at its floor)
+        shell: /bin/bash -e {0}
         run: ./build_all.sh
+
       - uses: actions/upload-artifact@v4
         with:
           name: libhook-glibc
-          path: mq_wiretap/dist/libhook-*.so
+          path: dist/libhook-*.so
           if-no-files-found: error
+
       - uses: actions/upload-artifact@v4
         with:
           name: listener-static
-          path: mq_wiretap/dist/listener-*
+          path: dist/listener-*
           if-no-files-found: error
