@@ -1,0 +1,28 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: 0.17.1
+      - name: Build all targets (every glibc triple pinned at 2.4)
+        working-directory: mq_wiretap
+        run: ./build_all.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libhook-glibc
+          path: mq_wiretap/dist/libhook-*.so
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: listener-static
+          path: mq_wiretap/dist/listener-*
+          if-no-files-found: error
